@@ -120,7 +120,6 @@ async function UpdateETF2LName(steamID, playerInfo, leagueElement) {
 
   if (!playerInfo.etf2l.name) return;
 
-  // const data = await resETF2L.json();
   const etf2lLink = document.createElement("a");
   etf2lLink.innerHTML = playerInfo.etf2l.name;
   etf2lLink.href = `https://etf2l.org/search/${steamID}/`;
@@ -198,11 +197,12 @@ async function FetchPlayerInfo(steamID) {
 
 async function UpdatePlayerRows() {
   const listOfSteamIDsInStorageThatMightNeedUpdating = [];
+  const arrayOfPlayerRows = [...playerRows]
+  const listOfSteamIDs = arrayOfPlayerRows.map((playerRow) => playerRow.id.split("_")[1]);
 
-  for (let i = 0; i < playerRows.length; i++) {
-    const steamID = playerRows[i].id.split("_")[1];
-
-    const leagueElement = playerRows[i].firstChild;
+  for (let i = 0; i < listOfSteamIDs.length; i++) {
+    const steamID = listOfSteamIDs[i];
+    const leagueElement = arrayOfPlayerRows.find((playerRow) => playerRow.id.split("_")[1] == steamID).firstChild; 
 
     const playerInfoStorage = window.localStorage.getItem(steamID);
     let playerInfo;
