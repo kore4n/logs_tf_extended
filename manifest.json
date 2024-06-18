@@ -1,7 +1,7 @@
 {
   "manifest_version": 2,
   "name": "logs_tf_extended",
-  "version": "1.2",
+  "version": "1.2.1",
   "description": "Adds ETF2L and RGL name and player division info to played games on logs.tf",
   "permissions": ["webRequest", "webRequestBlocking", "https://api.rgl.gg/v0/profile/*", "https://api-v2.etf2l.org/*", "activeTab", "storage"],
   "icons": {

@@ -18,6 +18,43 @@ const RGLDivisions = Object.freeze({
   Invite: 6,
 });
 
+const RGLDivisionSpecs = Object.freeze({
+  None: {
+    backgroundColor: 'gray',
+    textColor: 'black',
+    shortenedName: 'NEW',
+  },
+  Newcomer: {
+    backgroundColor: '#c54c36',
+    textColor: 'white',
+    shortenedName: 'NC',
+  },
+  Amateur: {
+    backgroundColor: '#d0cd36',
+    textColor: 'black',
+    shortenedName: 'AM',
+  },
+  Intermediate: {
+    backgroundColor: '#4ee16b',
+    textColor: 'black',
+    shortenedName: "IM"
+  },
+  Main: {
+    backgroundColor: '#55d1ce',
+    textColor: 'black',
+    shortenedName: "MAIN"
+  },
+  Advanced: {
+    backgroundColor: '#5f6bf6',
+    textColor: 'white',
+    shortenedName: "ADV"
+  },
+  Invite: {
+    backgroundColor: '#e049b2',
+    textColor: 'white',
+    shortenedName: "INV"
+  },
+})
 const timer = (ms) => new Promise((res) => setTimeout(res, ms));
 
 // gamemode = "Sixes" or "Highlander"
@@ -28,7 +65,6 @@ async function GetHighestGamemodeTeam(gamemode, steamID) {
     console.log(res);
     return;
   }
-
   const pastTeams = await res.json();
 
   let greatestNumerivalDivisionPlayed = RGLDivisions.None;
@@ -57,7 +93,7 @@ async function GetHighestGamemodeTeam(gamemode, steamID) {
 async function GetRGLPastTeams(steamID) {
   const uri = `https://api.rgl.gg/v0/profile/${steamID}/teams`;
 
-  await timer(350);
+  await timer(400);
 
   const response = await fetch(uri);
 
@@ -169,20 +205,22 @@ async function UpdateRGLDivision(playerInfo, leagueElement) {
   if (!playerInfo.rgl.name) return;
 
   const highestSixesTeam = playerInfo.rgl.division;
-  let sixesDivisionString = "";
-  if (highestSixesTeam != "None") {
-    sixesDivisionString = `${highestSixesTeam}`;
 
-    const rglDivisionElement = document.createElement("span");
+  const rglDivisionElement = document.createElement("span");
 
-    rglDivisionElement.style.backgroundColor = "rgb(255, 255, 153)";
+  rglDivisionElement.style.backgroundColor = RGLDivisionSpecs[highestSixesTeam].backgroundColor;
+  rglDivisionElement.style.color = RGLDivisionSpecs[highestSixesTeam].textColor;
 
-    rglDivisionElement.innerHTML = sixesDivisionString;
-    rglDivisionElement.style.padding = "6px";
-    rglDivisionElement.style.marginLeft = "10px";
+  rglDivisionElement.style.fontWeight = "bold";
+  rglDivisionElement.style.minWidth = "40px";
+  rglDivisionElement.style.display = "inline-block";
+  rglDivisionElement.style.textAlign = "center";
+  
+  rglDivisionElement.innerHTML = RGLDivisionSpecs[highestSixesTeam].shortenedName;
+  rglDivisionElement.style.padding = "6px";
+  rglDivisionElement.style.marginLeft = "10px";
 
-    leagueElement.appendChild(rglDivisionElement);
-  }
+  leagueElement.appendChild(rglDivisionElement);
 }
 
 async function FetchPlayerInfo(steamID) {
@@ -192,14 +230,16 @@ async function FetchPlayerInfo(steamID) {
 
   const highest_rgl_division = await GetHighestGamemodeTeam("Sixes", steamID);
 
+  const localPlayerInfo = window.localStorage.getItem(steamID) ?? null;
+
   const playerInfoToInsert = {
     rgl: {
-      name: RGL_profile_data ? RGL_profile_data.name : null,
-      isBanned: RGL_profile_data ? RGL_profile_data.status.isBanned : null,
-      division: highest_rgl_division ? highest_rgl_division : null,
+      name: RGL_profile_data ? RGL_profile_data.name : (localPlayerInfo ? localPlayerInfo.name : null),
+      isBanned: RGL_profile_data ? RGL_profile_data.status.isBanned : (localPlayerInfo ? localPlayerInfo.status.isBanned : null),
+      division: highest_rgl_division ? highest_rgl_division : (localPlayerInfo ? localPlayerInfo.highest_rgl_division : null),
     },
     etf2l: {
-      name: etf2l_name ? etf2l_name.player.name : null,
+      name: etf2l_name ? etf2l_name.player.name : (localPlayerInfo ? localPlayerInfo.player.name : null),
     },
   };
 
