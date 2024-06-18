@@ -1,3 +1,13 @@
+const getShowETF2L = async () => {
+    const showETF2L = await browser.storage.local.get("showETF2L");
+    return showETF2L.showETF2L;
+}
+
+const getShowRGL = async () => {
+    const showRGL = await browser.storage.local.get("showRGL");
+    return showRGL.showRGL;
+}
+
 const RGLDivisions = Object.freeze({
   None: 0,
   Newcomer: 1,
@@ -47,9 +57,9 @@ async function GetHighestGamemodeTeam(gamemode, steamID) {
 async function GetRGLPastTeams(steamID) {
   const uri = `https://api.rgl.gg/v0/profile/${steamID}/teams`;
 
-  const response = await fetch(uri);
+  await timer(350);
 
-  await timer(300);
+  const response = await fetch(uri);
 
   return response;
 }
@@ -57,11 +67,11 @@ async function GetRGLPastTeams(steamID) {
 async function GetRGLProfile(steamID) {
   const uri = `https://api.rgl.gg/v0/profile/${steamID}`;
 
-  const response = await fetch(uri);
-
   // 325ms and below are too fast - it will exceed rate limit.
-  // await timer(325);
-  await timer(300);
+  await timer(350);
+  // await timer(300);
+
+  const response = await fetch(uri);
 
   if (response.status != 200) {
     console.log(response);
@@ -75,9 +85,10 @@ async function GetRGLProfile(steamID) {
 
 async function GetETF2LName(steamID) {
   const uriETF2L = `https://api-v2.etf2l.org/player/${steamID}`;
-  const responseETF2L = await fetch(uriETF2L);
-
+  
   await timer(300);
+
+  const responseETF2L = await fetch(uriETF2L);
 
   if (responseETF2L.status != 200) {
     console.log(responseETF2L);
@@ -216,9 +227,13 @@ async function UpdatePlayerRows() {
       playerInfo = playerInfoToInsert;
     }
 
-    UpdateETF2LName(steamID, playerInfo, leagueElement);
-    UpdateRGLName(steamID, playerInfo, leagueElement);
-    UpdateRGLDivision(playerInfo, leagueElement);
+    // true/false
+    const showETF2L = await getShowETF2L();
+    const showRGL = await getShowRGL();
+
+    showETF2L && UpdateETF2LName(steamID, playerInfo, leagueElement);
+    showRGL && UpdateRGLName(steamID, playerInfo, leagueElement);
+    showRGL && UpdateRGLDivision(playerInfo, leagueElement);
   }
 
   // Update all of them in local storage
@@ -226,10 +241,12 @@ async function UpdatePlayerRows() {
     const steamID = listOfSteamIDsInStorageThatMightNeedUpdating[i];
     const playerInfoToInsert = await FetchPlayerInfo(steamID);
 
-    const a = window.localStorage.getItem(steamID);
-
-    if (JSON.stringify(playerInfoToInsert) != a) {
+    const localPlayerData = window.localStorage.getItem(steamID);
+    const fetchedPlayerData = JSON.stringify(playerInfoToInsert);
+    if (fetchedPlayerData != localPlayerData) {
       // console.log("mismatch. reloading.");
+      // console.log(`Recorded: ${localPlayerData}`)
+      // console.log(`New one: ${fetchedPlayerData}`)
       window.location.reload(true);
     }
 
@@ -251,9 +268,10 @@ playerTableHead.insertBefore(rglNameHeader, playerTableHead.firstChild);
 const playerRows = playerTableBody.children;
 
 for (let i = 0; i < playerRows.length; i++) {
-  const rglName = document.createElement("td");
-  rglName.innerHTML = "Loading...";
-  playerRows[i].insertBefore(rglName, playerRows[i].firstChild);
+  const leagueData = document.createElement("td");
+  // rglName.innerHTML = "Loading...";
+  leagueData.innerHTML = "";
+  playerRows[i].insertBefore(leagueData, playerRows[i].firstChild);
 }
 
 const mainElement = document.getElementsByClassName("container main")[0];

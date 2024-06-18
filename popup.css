@@ -1,0 +1,22 @@
+body {
+    background-color: rgba(30,30,30,255);
+    color: white;
+    font-size: large;
+}
+
+.popup-title {
+    font-weight: 700;
+}
+
+.org-buttons {
+    min-width: 80px;
+}
+
+.org-container {
+    padding: 5px 0px 5px 0px;
+}
+
+.org-button {
+    position: absolute; 
+    right: 5px;
+}
