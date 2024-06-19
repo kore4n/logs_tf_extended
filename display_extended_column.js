@@ -93,7 +93,7 @@ async function GetHighestGamemodeTeam(gamemode, steamID) {
 async function GetRGLPastTeams(steamID) {
   const uri = `https://api.rgl.gg/v0/profile/${steamID}/teams`;
 
-  await timer(400);
+  await timer(1000);
 
   const response = await fetch(uri);
 
@@ -103,9 +103,7 @@ async function GetRGLPastTeams(steamID) {
 async function GetRGLProfile(steamID) {
   const uri = `https://api.rgl.gg/v0/profile/${steamID}`;
 
-  // 325ms and below are too fast - it will exceed rate limit.
-  await timer(350);
-  // await timer(300);
+  await timer(1000);
 
   const response = await fetch(uri);
 
@@ -122,7 +120,7 @@ async function GetRGLProfile(steamID) {
 async function GetETF2LName(steamID) {
   const uriETF2L = `https://api-v2.etf2l.org/player/${steamID}`;
   
-  await timer(300);
+  await timer(400);
 
   const responseETF2L = await fetch(uriETF2L);
 
@@ -208,6 +206,13 @@ async function UpdateRGLDivision(playerInfo, leagueElement) {
 
   const rglDivisionElement = document.createElement("span");
 
+  if (!RGLDivisionSpecs[highestSixesTeam]) {
+    console.log(playerInfo.rgl.name);
+    console.log(`highestSixesTeam: ${highestSixesTeam}`);
+    console.log(JSON.stringify(!RGLDivisionSpecs[highestSixesTeam], null, 2));
+    return;
+  }
+
   rglDivisionElement.style.backgroundColor = RGLDivisionSpecs[highestSixesTeam].backgroundColor;
   rglDivisionElement.style.color = RGLDivisionSpecs[highestSixesTeam].textColor;
 
@@ -232,17 +237,23 @@ async function FetchPlayerInfo(steamID) {
 
   const localPlayerInfo = window.localStorage.getItem(steamID) ?? null;
 
+  const localPlayerInfoJson = JSON.parse(localPlayerInfo);
+  // console.log(JSON.stringify(JSON.parse(localPlayerInfo)))
+  // console.log("trying to access etf2l property")
+  // console.log(localPlayerInfo.etf2l);
+
   const playerInfoToInsert = {
     rgl: {
-      name: RGL_profile_data ? RGL_profile_data.name : (localPlayerInfo ? localPlayerInfo.name : null),
-      isBanned: RGL_profile_data ? RGL_profile_data.status.isBanned : (localPlayerInfo ? localPlayerInfo.status.isBanned : null),
-      division: highest_rgl_division ? highest_rgl_division : (localPlayerInfo ? localPlayerInfo.highest_rgl_division : null),
+      name: RGL_profile_data ? RGL_profile_data.name : (localPlayerInfoJson ? localPlayerInfoJson.rgl.name : null),
+      isBanned: RGL_profile_data ? RGL_profile_data.status.isBanned : (localPlayerInfoJson ? localPlayerInfoJson.rgl.isBanned : false),
+      division: highest_rgl_division ? highest_rgl_division : (localPlayerInfoJson ? localPlayerInfoJson.rgl.division : None),
     },
     etf2l: {
-      name: etf2l_name ? etf2l_name.player.name : (localPlayerInfo ? localPlayerInfo.player.name : null),
+      name: etf2l_name ? etf2l_name.player.name : (localPlayerInfoJson ? localPlayerInfoJson.etf2l.name : null),
     },
   };
 
+  
   return playerInfoToInsert;
 }
 
@@ -287,6 +298,7 @@ async function UpdatePlayerRows() {
       // console.log("mismatch. reloading.");
       // console.log(`Recorded: ${localPlayerData}`)
       // console.log(`New one: ${fetchedPlayerData}`)
+
       window.location.reload(true);
     }
 
