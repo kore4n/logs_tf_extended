@@ -1,11 +1,16 @@
 {
-  "manifest_version": 2,
+  "manifest_version": 3,
   "name": "logs_tf_extended",
   "version": "1.2.2",
   "description": "Adds ETF2L and RGL name and player division info to played games on logs.tf",
-  "permissions": ["webRequest", "webRequestBlocking", "https://api.rgl.gg/v0/profile/*", "https://api-v2.etf2l.org/*", "activeTab", "storage"],
+  "permissions": ["storage"],
   "icons": {
     "184": "icons/logs_tf_logo.jpg"
+  },
+  "host_permissions": ["https://api-v2.etf2l.org/*", "https://rgl.gg/*"],
+  "background": {
+    "scripts": ["background.js"],
+    "service_worker": "background.js"
   },
   "content_scripts": [
     {
@@ -13,11 +18,7 @@
       "js": ["display_extended_column.js"]
     }
   ],
-   "background": {
-    "scripts": ["background.js"],
-    "persistent": false
-  },
-  "browser_action": {
+  "action": {
     "default_icon": "icons/logs_tf_logo.jpg",
     "default_title": "LogsTF Extended",
     "default_popup": "popup.html"

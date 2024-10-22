@@ -1,10 +1,16 @@
+const sendMessageAndWait = async (type, steamID) => {
+  const data = await chrome.runtime.sendMessage({ type, steamID });
+  console.log(JSON.stringify(data, null, 2));
+  return data;
+};
+
 const getShowETF2L = async () => {
-    const showETF2L = await browser.storage.local.get("showETF2L");
+    const showETF2L = await chrome.storage.local.get("showETF2L");
     return showETF2L.showETF2L;
 }
 
 const getShowRGL = async () => {
-    const showRGL = await browser.storage.local.get("showRGL");
+    const showRGL = await chrome.storage.local.get("showRGL");
     return showRGL.showRGL;
 }
 
@@ -59,13 +65,10 @@ const timer = (ms) => new Promise((res) => setTimeout(res, ms));
 
 // gamemode = "Sixes" or "Highlander"
 async function GetHighestGamemodeTeam(gamemode, steamID) {
-  const res = await GetRGLPastTeams(steamID);
+  const data = await sendMessageAndWait("rgl_past_teams", steamID);
+  if (!data) return "";
 
-  if (res.status != 200) {
-    console.log(res);
-    return;
-  }
-  const pastTeams = await res.json();
+  const pastTeams = data;
 
   let greatestNumerivalDivisionPlayed = RGLDivisions.None;
 
@@ -90,53 +93,11 @@ async function GetHighestGamemodeTeam(gamemode, steamID) {
   return divisionString;
 }
 
-async function GetRGLPastTeams(steamID) {
-  const uri = `https://api.rgl.gg/v0/profile/${steamID}/teams`;
-
-  await timer(1000);
-
-  const response = await fetch(uri);
-
-  return response;
-}
-
-async function GetRGLProfile(steamID) {
-  const uri = `https://api.rgl.gg/v0/profile/${steamID}`;
-
-  await timer(1000);
-
-  const response = await fetch(uri);
-
-  if (response.status != 200) {
-    console.log(response);
-    return;
-  }
-
-  const data = await response.json();
-
-  return data;
-}
-
-async function GetETF2LName(steamID) {
-  const uriETF2L = `https://api-v2.etf2l.org/player/${steamID}`;
-  
-  await timer(400);
-
-  const responseETF2L = await fetch(uriETF2L);
-
-  if (responseETF2L.status != 200) {
-    console.log(responseETF2L);
-    return;
-  }
-
-  const data = await responseETF2L.json();
-  return data;
-}
-
 async function UpdateETF2L() {
   for (let i = 0; i < playerRows.length; i++) {
     const steamID = playerRows[i].id.split("_")[1];
-    const resETF2L = await GetETF2LName(steamID);
+    const resETF2L = await sendMessageAndWait("etf2l_profile", steamID);
+    if (!resETF2L) return;
 
     const leagueElement = playerRows[i].firstChild;
 
@@ -148,7 +109,8 @@ async function UpdateETF2L() {
       continue;
     }
 
-    const data = await resETF2L.json();
+    // const data = await resETF2L.json();
+    const data = await resETF2L;
     const etf2lLink = document.createElement("a");
     etf2lLink.innerHTML = data.player.name;
     etf2lLink.href = `https://etf2l.org/search/${steamID}/`;
@@ -229,30 +191,27 @@ async function UpdateRGLDivision(playerInfo, leagueElement) {
 }
 
 async function FetchPlayerInfo(steamID) {
-  const RGL_profile_data = await GetRGLProfile(steamID);
-
-  const etf2l_name = await GetETF2LName(steamID);
+  const resRGL = await sendMessageAndWait("rgl_profile", steamID);
+  const resETF2LName = await sendMessageAndWait("etf2l_profile", steamID);
+  const RGL_profile_data = resRGL;
+  const etf2l_name = resETF2LName;
 
   const highest_rgl_division = await GetHighestGamemodeTeam("Sixes", steamID);
 
   const localPlayerInfo = window.localStorage.getItem(steamID) ?? null;
 
   const localPlayerInfoJson = JSON.parse(localPlayerInfo);
-  // console.log(JSON.stringify(JSON.parse(localPlayerInfo)))
-  // console.log("trying to access etf2l property")
-  // console.log(localPlayerInfo.etf2l);
 
   const playerInfoToInsert = {
     rgl: {
       name: RGL_profile_data ? RGL_profile_data.name : (localPlayerInfoJson ? localPlayerInfoJson.rgl.name : null),
       isBanned: RGL_profile_data ? RGL_profile_data.status.isBanned : (localPlayerInfoJson ? localPlayerInfoJson.rgl.isBanned : false),
-      division: highest_rgl_division ? highest_rgl_division : (localPlayerInfoJson ? localPlayerInfoJson.rgl.division : None),
+      division: highest_rgl_division ? highest_rgl_division : (localPlayerInfoJson ? localPlayerInfoJson.rgl.division : "None"),
     },
     etf2l: {
       name: etf2l_name ? etf2l_name.player.name : (localPlayerInfoJson ? localPlayerInfoJson.etf2l.name : null),
     },
   };
-
   
   return playerInfoToInsert;
 }
@@ -294,11 +253,7 @@ async function UpdatePlayerRows() {
 
     const localPlayerData = window.localStorage.getItem(steamID);
     const fetchedPlayerData = JSON.stringify(playerInfoToInsert);
-    if (fetchedPlayerData != localPlayerData) {
-      // console.log("mismatch. reloading.");
-      // console.log(`Recorded: ${localPlayerData}`)
-      // console.log(`New one: ${fetchedPlayerData}`)
-
+    if (localPlayerData != null && fetchedPlayerData != localPlayerData) {
       window.location.reload(true);
     }
 

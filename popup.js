@@ -1,18 +1,18 @@
 async function setETF2LValue(newValue) {
-    await browser.storage.local.set({ showETF2L: newValue });
+    await chrome.storage.local.set({ showETF2L: newValue });
 }
 
 async function setRGLValue(newValue) {
-    await browser.storage.local.set({ showRGL: newValue });
+    await chrome.storage.local.set({ showRGL: newValue });
 }
 
 async function populateETF2LCheckbox(etf2lInput) {
-    const showETF2L = await browser.storage.local.get("showETF2L");
+    const showETF2L = await chrome.storage.local.get("showETF2L");
     etf2lInput.checked = showETF2L.showETF2L;
 }
 
 async function populateRGLCheckbox(rglInput) {
-    const showRGL = await browser.storage.local.get("showRGL");
+    const showRGL = await chrome.storage.local.get("showRGL");
     rglInput.checked = showRGL.showRGL;
 }
 
