@@ -1,18 +1,20 @@
+const isFirefox = typeof browser !== "undefined";
+const currentBrowser = isFirefox ? browser : chrome;
+
 const sendMessageAndWait = async (type, steamID) => {
-  const data = await chrome.runtime.sendMessage({ type, steamID });
-  console.log(JSON.stringify(data, null, 2));
+  const data = await currentBrowser.runtime.sendMessage({ type, steamID });
   return data;
 };
 
 const getShowETF2L = async () => {
-    const showETF2L = await chrome.storage.local.get("showETF2L");
-    return showETF2L.showETF2L;
-}
+  const showETF2L = await currentBrowser.storage.local.get("showETF2L");
+  return showETF2L.showETF2L;
+};
 
 const getShowRGL = async () => {
-    const showRGL = await chrome.storage.local.get("showRGL");
-    return showRGL.showRGL;
-}
+  const showRGL = await currentBrowser.storage.local.get("showRGL");
+  return showRGL.showRGL;
+};
 
 const RGLDivisions = Object.freeze({
   None: 0,
@@ -26,41 +28,41 @@ const RGLDivisions = Object.freeze({
 
 const RGLDivisionSpecs = Object.freeze({
   None: {
-    backgroundColor: 'gray',
-    textColor: 'black',
-    shortenedName: 'NEW',
+    backgroundColor: "gray",
+    textColor: "black",
+    shortenedName: "NEW",
   },
   Newcomer: {
-    backgroundColor: '#c54c36',
-    textColor: 'white',
-    shortenedName: 'NC',
+    backgroundColor: "#c54c36",
+    textColor: "white",
+    shortenedName: "NC",
   },
   Amateur: {
-    backgroundColor: '#d0cd36',
-    textColor: 'black',
-    shortenedName: 'AM',
+    backgroundColor: "#d0cd36",
+    textColor: "black",
+    shortenedName: "AM",
   },
   Intermediate: {
-    backgroundColor: '#4ee16b',
-    textColor: 'black',
-    shortenedName: "IM"
+    backgroundColor: "#4ee16b",
+    textColor: "black",
+    shortenedName: "IM",
   },
   Main: {
-    backgroundColor: '#55d1ce',
-    textColor: 'black',
-    shortenedName: "MAIN"
+    backgroundColor: "#55d1ce",
+    textColor: "black",
+    shortenedName: "MAIN",
   },
   Advanced: {
-    backgroundColor: '#5f6bf6',
-    textColor: 'white',
-    shortenedName: "ADV"
+    backgroundColor: "#5f6bf6",
+    textColor: "white",
+    shortenedName: "ADV",
   },
   Invite: {
-    backgroundColor: '#e049b2',
-    textColor: 'white',
-    shortenedName: "INV"
+    backgroundColor: "#e049b2",
+    textColor: "white",
+    shortenedName: "INV",
   },
-})
+});
 const timer = (ms) => new Promise((res) => setTimeout(res, ms));
 
 // gamemode = "Sixes" or "Highlander"
@@ -182,7 +184,7 @@ async function UpdateRGLDivision(playerInfo, leagueElement) {
   rglDivisionElement.style.minWidth = "40px";
   rglDivisionElement.style.display = "inline-block";
   rglDivisionElement.style.textAlign = "center";
-  
+
   rglDivisionElement.innerHTML = RGLDivisionSpecs[highestSixesTeam].shortenedName;
   rglDivisionElement.style.padding = "6px";
   rglDivisionElement.style.marginLeft = "10px";
@@ -204,26 +206,34 @@ async function FetchPlayerInfo(steamID) {
 
   const playerInfoToInsert = {
     rgl: {
-      name: RGL_profile_data ? RGL_profile_data.name : (localPlayerInfoJson ? localPlayerInfoJson.rgl.name : null),
-      isBanned: RGL_profile_data ? RGL_profile_data.status.isBanned : (localPlayerInfoJson ? localPlayerInfoJson.rgl.isBanned : false),
-      division: highest_rgl_division ? highest_rgl_division : (localPlayerInfoJson ? localPlayerInfoJson.rgl.division : "None"),
+      name: RGL_profile_data ? RGL_profile_data.name : localPlayerInfoJson ? localPlayerInfoJson.rgl.name : null,
+      isBanned: RGL_profile_data
+        ? RGL_profile_data.status.isBanned
+        : localPlayerInfoJson
+        ? localPlayerInfoJson.rgl.isBanned
+        : false,
+      division: highest_rgl_division
+        ? highest_rgl_division
+        : localPlayerInfoJson
+        ? localPlayerInfoJson.rgl.division
+        : "None",
     },
     etf2l: {
-      name: etf2l_name ? etf2l_name.player.name : (localPlayerInfoJson ? localPlayerInfoJson.etf2l.name : null),
+      name: etf2l_name ? etf2l_name.player.name : localPlayerInfoJson ? localPlayerInfoJson.etf2l.name : null,
     },
   };
-  
+
   return playerInfoToInsert;
 }
 
 async function UpdatePlayerRows() {
   const listOfSteamIDsInStorageThatMightNeedUpdating = [];
-  const arrayOfPlayerRows = [...playerRows]
+  const arrayOfPlayerRows = [...playerRows];
   const listOfSteamIDs = arrayOfPlayerRows.map((playerRow) => playerRow.id.split("_")[1]);
 
   for (let i = 0; i < listOfSteamIDs.length; i++) {
     const steamID = listOfSteamIDs[i];
-    const leagueElement = arrayOfPlayerRows.find((playerRow) => playerRow.id.split("_")[1] == steamID).firstChild; 
+    const leagueElement = arrayOfPlayerRows.find((playerRow) => playerRow.id.split("_")[1] == steamID).firstChild;
 
     const playerInfoStorage = window.localStorage.getItem(steamID);
     let playerInfo;

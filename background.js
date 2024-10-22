@@ -1,3 +1,6 @@
+const isFirefox = typeof browser !== "undefined";
+const currentBrowser = isFirefox ? browser : chrome;
+
 const timer = (ms) => new Promise((res) => setTimeout(res, ms));
 
 async function GetRGLPastTeams(steamID) {
@@ -20,7 +23,6 @@ async function GetRGLProfile(steamID) {
     console.log(response);
     return;
   }
-  console.log("got rgl profile");
   return await response.json();
 }
 
@@ -39,8 +41,6 @@ async function GetETF2LName(steamID) {
   return await response.json();
 }
 
-// const currentBrowser = (typeof browser) === undefined ? chrome : browser;
-
 async function GetAllData(steamID, messageType) {
   let data;
   if (messageType === "rgl_profile") {
@@ -53,14 +53,12 @@ async function GetAllData(steamID, messageType) {
   return data;
 }
 
-chrome.runtime.onInstalled.addListener(async () => {
-  await chrome.storage.local.set({ showRGL: true });
-  await chrome.storage.local.set({ showETF2L: true });
-  return true;
+currentBrowser.runtime.onInstalled.addListener(async () => {
+  await currentBrowser.storage.local.set({ showRGL: true });
+  await currentBrowser.storage.local.set({ showETF2L: true });
 });
 
-chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
-  GetAllData(message.steamID, message.type).then((data) => sendResponse(data))
-
+currentBrowser.runtime.onMessage.addListener((message, sender, sendResponse) => {
+  GetAllData(message.steamID, message.type).then((data) => sendResponse(data));
   return true;
 });
