@@ -56,6 +56,7 @@ async function GetAllData(steamID, messageType) {
 currentBrowser.runtime.onInstalled.addListener(async () => {
   await currentBrowser.storage.local.set({ showRGL: true });
   await currentBrowser.storage.local.set({ showETF2L: true });
+  await currentBrowser.storage.local.set({ getHighestDivisionPlayed: true });
 });
 
 currentBrowser.runtime.onMessage.addListener((message, sender, sendResponse) => {

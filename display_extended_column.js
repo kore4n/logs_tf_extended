@@ -16,6 +16,11 @@ const getShowRGL = async () => {
   return showRGL.showRGL;
 };
 
+const getHighestDivisionPlayed = async () => {
+  const getHighestDivisionPlayed = await currentBrowser.storage.local.get("getHighestDivisionPlayed");
+  return getHighestDivisionPlayed.getHighestDivisionPlayed;
+};
+
 const RGLDivisions = Object.freeze({
   None: 0,
   Newcomer: 1,
@@ -24,6 +29,16 @@ const RGLDivisions = Object.freeze({
   Main: 4,
   Advanced: 5,
   Invite: 6,
+});
+
+const RGLDivisionsInverse = Object.freeze({
+  0: "None",
+  1: "Newcomer",
+  2: "Amateur",
+  3: "Intermediate",
+  4: "Main",
+  5: "Advanced",
+  6: "Invite",
 });
 
 const RGLDivisionSpecs = Object.freeze({
@@ -63,36 +78,48 @@ const RGLDivisionSpecs = Object.freeze({
     shortenedName: "INV",
   },
 });
+
 const timer = (ms) => new Promise((res) => setTimeout(res, ms));
 
-// gamemode = "Sixes" or "Highlander"
-async function GetHighestGamemodeTeam(gamemode, steamID) {
-  const data = await sendMessageAndWait("rgl_past_teams", steamID);
-  if (!data) return "";
-
-  const pastTeams = data;
-
+function GetHighestDivisionPlayed(pastTeams, gameMode) {
   let greatestNumerivalDivisionPlayed = RGLDivisions.None;
-
   for (let i = 0; i < pastTeams.length; i++) {
-    if (pastTeams[i].formatName != gamemode) continue;
+    if (pastTeams[i].formatName != gameMode) continue;
 
     const numericalValue = RGLDivisions[pastTeams[i].divisionName];
     if (greatestNumerivalDivisionPlayed < numericalValue) {
       greatestNumerivalDivisionPlayed = numericalValue;
     }
   }
+  return greatestNumerivalDivisionPlayed;
+}
 
-  // console.log(JSON.stringify(pastTeams, null, 2));
+function GetLatestDivisionPlayed(pastTeams, gameMode) {
+  if (pastTeams.length === 0) return RGLDivisions.None;
 
-  let divisionString = null;
-  for (const key in RGLDivisions) {
-    if (RGLDivisions[key] == greatestNumerivalDivisionPlayed) {
-      divisionString = key;
-      break;
-    }
+  for (let i = 0; i < pastTeams.length; i++) {
+    if (pastTeams[i].formatName != gameMode) continue;
+    if (RGLDivisions[pastTeams[i].divisionName] === undefined) continue;  // To account for special division names like "Spec 2-day" from cups
+    return RGLDivisions[pastTeams[i].divisionName];
   }
-  return divisionString;
+  return RGLDivisions.None;
+}
+
+// gamemode = "Sixes" or "Highlander"
+// getHighestPlayed
+// true = get the user's highest division played
+// false = latest division played
+async function GetHighestGamemodeTeam(gameMode, steamID) {
+  const pastTeams = await sendMessageAndWait("rgl_past_teams", steamID);
+
+  const highestNumericalDivisionPlayed = GetHighestDivisionPlayed(pastTeams, gameMode);
+  const latestNumericalDivisionPlayed = GetLatestDivisionPlayed(pastTeams, gameMode);
+  const highestDivisionString = RGLDivisionsInverse[highestNumericalDivisionPlayed];
+  const latestDivisionString = RGLDivisionsInverse[latestNumericalDivisionPlayed];
+  return {
+    highestDivisionString,
+    latestDivisionString,
+  };
 }
 
 async function UpdateETF2L() {
@@ -165,27 +192,23 @@ async function UpdateRGLName(steamID, playerInfo, leagueElement) {
 
 async function UpdateRGLDivision(playerInfo, leagueElement) {
   if (!playerInfo.rgl.name) return;
+  const getHighestDivison = await getHighestDivisionPlayed();
+  const division = getHighestDivison ? playerInfo.rgl.division : playerInfo.rgl.latestDivision;
 
-  const highestSixesTeam = playerInfo.rgl.division;
-
-  const rglDivisionElement = document.createElement("span");
-
-  if (!RGLDivisionSpecs[highestSixesTeam]) {
-    console.log(playerInfo.rgl.name);
-    console.log(`highestSixesTeam: ${highestSixesTeam}`);
-    console.log(JSON.stringify(!RGLDivisionSpecs[highestSixesTeam], null, 2));
+  if (!RGLDivisionSpecs[division]) {
+    console.log('Error occurred for ' + playerInfo.rgl.name);
+    console.log(`The division is not valid. Division: ${division}`);
     return;
   }
 
-  rglDivisionElement.style.backgroundColor = RGLDivisionSpecs[highestSixesTeam].backgroundColor;
-  rglDivisionElement.style.color = RGLDivisionSpecs[highestSixesTeam].textColor;
-
+  const rglDivisionElement = document.createElement("span");
+  rglDivisionElement.style.backgroundColor = RGLDivisionSpecs[division].backgroundColor;
+  rglDivisionElement.style.color = RGLDivisionSpecs[division].textColor;
   rglDivisionElement.style.fontWeight = "bold";
   rglDivisionElement.style.minWidth = "40px";
   rglDivisionElement.style.display = "inline-block";
   rglDivisionElement.style.textAlign = "center";
-
-  rglDivisionElement.innerHTML = RGLDivisionSpecs[highestSixesTeam].shortenedName;
+  rglDivisionElement.innerHTML = RGLDivisionSpecs[division].shortenedName;
   rglDivisionElement.style.padding = "6px";
   rglDivisionElement.style.marginLeft = "10px";
 
@@ -198,8 +221,7 @@ async function FetchPlayerInfo(steamID) {
   const RGL_profile_data = resRGL;
   const etf2l_name = resETF2LName;
 
-  const highest_rgl_division = await GetHighestGamemodeTeam("Sixes", steamID);
-
+  const { highestDivisionString, latestDivisionString } = await GetHighestGamemodeTeam("Sixes", steamID);
   const localPlayerInfo = window.localStorage.getItem(steamID) ?? null;
 
   const localPlayerInfoJson = JSON.parse(localPlayerInfo);
@@ -212,11 +234,8 @@ async function FetchPlayerInfo(steamID) {
         : localPlayerInfoJson
         ? localPlayerInfoJson.rgl.isBanned
         : false,
-      division: highest_rgl_division
-        ? highest_rgl_division
-        : localPlayerInfoJson
-        ? localPlayerInfoJson.rgl.division
-        : "None",
+      division: highestDivisionString ? highestDivisionString : localPlayerInfoJson ? localPlayerInfoJson.rgl.division : "None",
+      latestDivision: latestDivisionString,
     },
     etf2l: {
       name: etf2l_name ? etf2l_name.player.name : localPlayerInfoJson ? localPlayerInfoJson.etf2l.name : null,
