@@ -22,5 +22,10 @@
     "default_icon": "icons/logs_tf_logo.jpg",
     "default_title": "LogsTF Extended",
     "default_popup": "popup.html"
+  },
+  "browser_specific_settings": {
+    "gecko": {
+      "id": "{1f63b222-297a-4f42-9ecb-5946054dd9d5}"
+    }
   }
 }
